@@ -9,54 +9,65 @@ st.title("🧠 MarketPulse: Global Sentiment Terminal")
 # --- 1. The Flexible Asset Selector ---
 universe = MarketEngine.get_asset_universe()
 
-# Create a flattened "All Assets" dictionary for the global autofill
+# Create flattened dictionary for search
 all_assets = {}
 for category, assets in universe.items():
     for name, ticker in assets.items():
-        # We add the category to the name for better context in the global search
-        # e.g., "Petrobras (Brazil Market)"
         all_assets[f"{name} ({category.split()[1]})"] = ticker
 
-# Define the menu options
 menu_options = ["🌐 Search All (Autofill)", "✍️ Manual Ticker Entry"] + sorted(list(universe.keys()))
 
-col1, col2 = st.columns([1, 2])
+# --- LAYOUT UPDATE: 3 Columns for Controls ---
+col1, col2, col3 = st.columns([1.5, 2, 1])
 
+# 1. Market Filter
 with col1:
     selected_category = st.selectbox("📂 Market Filter", menu_options)
 
-# Variables to hold selection
+# 2. Asset Selection Logic
 selected_ticker = None
 selected_asset_name = None
 
 with col2:
     if selected_category == "🌐 Search All (Autofill)":
-        # MODE 1: Global Dropdown with Autofill
         selected_asset_name = st.selectbox("🔍 Search Global Universe", sorted(all_assets.keys()))
         selected_ticker = all_assets[selected_asset_name]
         
     elif selected_category == "✍️ Manual Ticker Entry":
-        # MODE 2: Free Text Input
         user_input = st.text_input("⌨️ Enter Ticker Symbol", value="EURUSD=X", help="E.g., PBR, BTC-USD, GC=F").upper()
         selected_ticker = user_input.strip()
         selected_asset_name = f"{selected_ticker} (Manual)"
         
     else:
-        # MODE 3: Category Filter
         category_assets = universe[selected_category]
         selected_asset_name = st.selectbox("📍 Select Asset", sorted(category_assets.keys()))
         selected_ticker = category_assets[selected_asset_name]
 
+# 3. Timeframe Selector (The New Feature)
+with col3:
+    time_options = {
+        "1 Month": "1mo",
+        "3 Months": "3mo",
+        "6 Months": "6mo",
+        "1 Year": "1y",
+        "3 Years": "3y",
+        "5 Years": "5y",
+        "Max History": "max"
+    }
+    # Default to 1 Year
+    selected_time_label = st.selectbox("📅 Timeframe", list(time_options.keys()), index=3)
+    selected_period = time_options[selected_time_label]
+
 # --- 2. Execution & Visualization ---
 if selected_ticker:
+    # We pass the SELECTED PERIOD to the engine
     engine = MarketEngine(selected_ticker)
-    df = engine.get_historical_data(period="1y")
+    df = engine.get_historical_data(period=selected_period)
 
     if not df.empty:
         latest_price = df['Close'].iloc[-1]
         latest_emotion = df['Emotional_Score'].iloc[-1]
         
-        # Determine currency/unit
         currency = "ARS" if ".BA" in selected_ticker else "USD"
         
         # Header Stats
@@ -95,7 +106,7 @@ if selected_ticker:
         fig.add_trace(
             go.Scatter(
                 x=df.index, y=df['Emotional_Score'], name="Sentiment",
-                line=dict(color=color, width=3) # Line color matches the mood
+                line=dict(color=color, width=2)
             ),
             secondary_y=True
         )
@@ -105,7 +116,7 @@ if selected_ticker:
         fig.add_hrect(y0=0, y1=30, fillcolor="green", opacity=0.1, secondary_y=True)
 
         fig.update_layout(
-            title=f"Sentiment Analysis: {selected_asset_name}",
+            title=f"Technical Sentiment: {selected_asset_name} ({selected_time_label})",
             template="plotly_dark",
             height=550,
             hovermode="x unified",
