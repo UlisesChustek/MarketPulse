@@ -16,6 +16,7 @@
     - **Autofill Mode:** Browse curated categories.
     - **Manual Mode:** Type ANY ticker supported by Yahoo Finance (e.g., `EURUSD=X`, `^VIX`).
 - **📊 Professional Visualization:** Interactive **Dual-Axis Plotly Charts** showing Price (Area) vs. Sentiment (Line) with dynamic color coding.
+<img width="1794" height="787" alt="image" src="https://github.com/user-attachments/assets/53423b57-a862-4289-a321-d020bf27622a" />
 
 ## 🛠️ Technical Architecture
 
